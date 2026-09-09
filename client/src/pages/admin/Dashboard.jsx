@@ -62,14 +62,6 @@ const Dashboard = () => {
           <h1 className="text-4xl font-serif text-[#111] mb-2">Dashboard Overview</h1>
           <p className="text-gray-500 text-sm">Welcome back, Admin. Here is the daily summary for StyleHub Sri Lanka & islandwide orders.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button icon={<Upload size={16} />} className="flex items-center text-sm font-medium h-10 px-4 rounded-md border-gray-200">
-            Export Ledger
-          </Button>
-          <Button type="primary" icon={<Plus size={16} />} className="flex items-center bg-[#111] hover:bg-[#333] h-10 px-4 text-sm font-medium rounded-md">
-            New Product
-          </Button>
-        </div>
       </div>
 
       {/* Stats Cards */}
