@@ -12,7 +12,8 @@ import {
   Bell,
   ShoppingBag,
   CreditCard,
-  MessageSquare
+  MessageSquare,
+  Star
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import './Admin.css'; // Import custom styles
@@ -60,6 +61,12 @@ const AdminLayout = () => {
       icon: <CreditCard size={18} />,
       label: 'Payments & Sales Reports',
       roles: ['developer', 'owner', 'sales_staff']
+    },
+    {
+      key: '/admin/reviews',
+      icon: <Star size={18} />,
+      label: 'Customer Reviews',
+      roles: ['developer', 'owner']
     },
     {
       key: '/admin/tickets',

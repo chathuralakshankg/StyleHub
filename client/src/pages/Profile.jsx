@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Form, Input, Button, message, Spin } from 'antd';
+import { Form, Input, Button, message, Spin, Modal, Rate } from 'antd';
 import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, Check, Package, Calendar, CreditCard, ChevronRight, Hash } from 'lucide-react';
+import { ArrowLeft, MapPin, Check, Package, Calendar, CreditCard, ChevronRight, Hash, Star } from 'lucide-react';
 import AnnouncementBar from '../components/AnnouncementBar';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -15,6 +15,14 @@ const Profile = () => {
   const [displayLocation, setDisplayLocation] = useState('Add your location');
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+
+  // Review Modal State
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [reviewingProduct, setReviewingProduct] = useState(null);
+  const [reviewingOrder, setReviewingOrder] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -73,6 +81,51 @@ const Profile = () => {
       fetchOrders();
     }
   }, [user, form]);
+
+  const openReviewModal = (product, orderId) => {
+    setReviewingProduct(product);
+    setReviewingOrder(orderId);
+    setReviewRating(5);
+    setReviewComment('');
+    setReviewModalVisible(true);
+  };
+
+  const submitReview = async () => {
+    if (!reviewRating || !reviewComment.trim()) {
+      return message.warning('Please provide both a rating and a comment.');
+    }
+
+    setSubmittingReview(true);
+    try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      const response = await fetch('http://localhost:5000/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userInfo.token}`
+        },
+        body: JSON.stringify({
+          productId: reviewingProduct._id || reviewingProduct,
+          orderId: reviewingOrder,
+          rating: reviewRating,
+          comment: reviewComment
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        message.success('Review submitted successfully! It is pending approval.');
+        setReviewModalVisible(false);
+      } else {
+        message.error(data.message || 'Failed to submit review');
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      message.error('An error occurred. Please try again.');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const onFinish = async (values) => {
     setSaving(true);
@@ -403,8 +456,16 @@ const Profile = () => {
                               <span>Qty: {item.quantity}</span>
                             </div>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right flex flex-col items-end gap-2">
                             <p className="text-sm font-medium text-gray-900">LKR {(item.price * item.quantity).toLocaleString()}</p>
+                            {order.orderStatus === 'Delivered' && (
+                              <button 
+                                onClick={() => openReviewModal(item.product, order._id)}
+                                className="text-[10px] font-bold uppercase tracking-wider text-white bg-black px-3 py-1.5 rounded flex items-center gap-1 hover:bg-gray-800 transition-colors"
+                              >
+                                <Star size={10} fill="currentColor" /> Review Product
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -425,6 +486,46 @@ const Profile = () => {
         </div>
       </div>
     </div>
+    
+    {/* Review Modal */}
+    <Modal
+      title={<span className="font-serif text-xl">Leave a Review</span>}
+      open={reviewModalVisible}
+      onCancel={() => setReviewModalVisible(false)}
+      footer={[
+        <Button key="cancel" onClick={() => setReviewModalVisible(false)} className="rounded-sm">Cancel</Button>,
+        <Button 
+          key="submit" 
+          type="primary" 
+          loading={submittingReview} 
+          onClick={submitReview}
+          className="bg-black hover:bg-gray-800 text-white rounded-sm"
+        >
+          Submit Review
+        </Button>
+      ]}
+    >
+      <div className="py-4">
+        <p className="text-sm text-gray-600 mb-4">How was your experience with <strong>{reviewingProduct?.name || 'this product'}</strong>?</p>
+        
+        <div className="mb-6">
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Your Rating</p>
+          <Rate value={reviewRating} onChange={setReviewRating} className="text-yellow-500" />
+        </div>
+        
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Your Comment</p>
+          <Input.TextArea 
+            rows={4} 
+            value={reviewComment}
+            onChange={(e) => setReviewComment(e.target.value)}
+            placeholder="Tell us what you think about the quality, fit, and style..."
+            className="rounded-sm"
+          />
+        </div>
+      </div>
+    </Modal>
+    
     <Footer />
     </>
   );

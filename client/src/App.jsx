@@ -13,12 +13,14 @@ import AdminProducts from './pages/admin/AdminProducts';
 import AdminTickets from './pages/admin/AdminTickets';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminReports from './pages/admin/AdminReports';
+import AdminReviews from './pages/admin/AdminReviews';
 import Profile from './pages/Profile';
 import Collections from './pages/Collections';
 import ProductDetails from './pages/ProductDetails';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import CheckoutSuccess from './pages/CheckoutSuccess';
+import Reviews from './pages/Reviews';
 import Payment from './pages/Payment';
 import { CartProvider } from './context/CartContext';
 
@@ -67,6 +69,7 @@ export default function App() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/payment" element={<Payment />} />
             <Route path="/checkout-success" element={<CheckoutSuccess />} />
+            <Route path="/reviews" element={<Reviews />} />
             <Route path="/verify/:token" element={<VerifyEmail />} />
             <Route path="/resetpassword/:token" element={<ResetPassword />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -79,6 +82,7 @@ export default function App() {
                 <Route path="products" element={<AdminProducts />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="payments" element={<AdminReports />} />
+                <Route path="reviews" element={<AdminReviews />} />
                 <Route path="tickets" element={<AdminTickets />} />
                 <Route path="settings" element={<div className="p-8">Settings Page Coming Soon</div>} />
               </Route>

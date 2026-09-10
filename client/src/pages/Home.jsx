@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Card, Row, Col, Layout, Typography, Divider } from 'antd';
 import { ShieldCheck, Truck, RefreshCw } from 'lucide-react';
@@ -33,8 +33,39 @@ const categories = [
 ];
 
 const Home = () => {
+  const [reviews, setReviews] = useState([]);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/reviews');
+        if (response.ok) {
+          const data = await response.json();
+          setReviews(data.slice(0, 10)); // Get latest 10 approved reviews
+        }
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+      }
+    };
+    fetchReviews();
+  }, []);
+
   return (
     <>
+      <style>
+        {`
+          @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-33.333333%); }
+          }
+          .animate-marquee {
+            animation: marquee 30s linear infinite;
+          }
+          .animate-marquee:hover {
+            animation-play-state: paused;
+          }
+        `}
+      </style>
       <AnnouncementBar />
       <Navbar />
       <Content>
@@ -142,6 +173,38 @@ const Home = () => {
             ))}
           </Row>
         </section>
+
+        {/* Reviews Marquee */}
+        {reviews.length > 0 && (
+          <section className="py-24 border-t border-gray-100 overflow-hidden bg-white">
+            <div className="text-center mb-12">
+              <Text className="text-gray-500 tracking-widest uppercase text-xs font-semibold mb-2 block">Customer Voices</Text>
+              <Title level={2} className="!font-serif !text-4xl">Loved by Patrons</Title>
+            </div>
+            
+            <div className="relative flex overflow-x-hidden">
+              <div className="animate-marquee whitespace-nowrap flex w-max">
+                {[...reviews, ...reviews, ...reviews].map((review, idx) => (
+                  <div key={`${review._id}-${idx}`} className="w-80 md:w-96 mx-4 p-6 border border-gray-100 rounded-lg shadow-sm bg-[#fafafa] flex-shrink-0 whitespace-normal inline-block align-top cursor-pointer">
+                    <div className="flex text-yellow-500 text-xs mb-3">
+                      {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                    </div>
+                    <p className="text-gray-700 italic mb-6 line-clamp-3">"{review.comment}"</p>
+                    <div className="flex items-center gap-3 mt-auto">
+                      <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-serif text-sm">
+                        {review.user?.name ? review.user.name.substring(0, 2).toUpperCase() : 'U'}
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold text-gray-900 block">{review.user?.name || 'Anonymous'}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{review.product?.name}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Newsletter Section */}
         <section className="bg-gray-100 py-24 px-6">

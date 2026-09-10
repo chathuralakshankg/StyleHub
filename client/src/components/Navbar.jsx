@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Layout, Badge } from 'antd';
-import { Search, User, ShoppingBag, LogOut, LayoutDashboard, ChevronDown, X } from 'lucide-react';
+import { Search, User, ShoppingBag, LogOut, LayoutDashboard, ChevronDown, X, Star } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthModal from './Auth';
 import { AuthContext } from '../context/AuthContext';
@@ -81,6 +81,8 @@ const Navbar = () => {
                 ))}
               </div>
             </div>
+
+            <Link to="/reviews" className="hover:text-black transition-colors py-4 flex items-center gap-1">Reviews <Star size={12} fill="#eab308" className="text-yellow-500" /></Link>
           </div>
         </div>
 

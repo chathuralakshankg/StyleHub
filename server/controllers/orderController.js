@@ -77,7 +77,9 @@ const createOrder = async (req, res) => {
 // @access  Private
 const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
+    const orders = await Order.find({ user: req.user.id })
+      .populate('orderItems.product', 'id name image category')
+      .sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
     console.error('Get My Orders Error:', error);
