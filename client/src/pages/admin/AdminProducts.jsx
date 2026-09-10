@@ -54,11 +54,18 @@ const AdminProducts = () => {
     
     form.setFieldsValue({
       name: record.name,
+      description: record.description,
       category: record.category ? [record.category] : [],
       subCategory: record.subCategory ? [record.subCategory] : [],
       fabric: record.fabric,
       price: record.price,
-      variants: record.variants && record.variants.length > 0 ? record.variants : [{ size: '', stock: 0 }]
+      variants: record.variants && record.variants.length > 0 ? record.variants.map(v => {
+        const mapped = { size: v.size, color: v.color, stock: v.stock };
+        if (v.image) {
+          mapped.image = [{ uid: `-variant-${v._id || Math.random()}`, name: 'image', status: 'done', url: v.image }];
+        }
+        return mapped;
+      }) : [{ size: '', stock: 0 }]
     });
     
     setIsModalVisible(true);
@@ -94,11 +101,28 @@ const AdminProducts = () => {
     try {
       const formData = new FormData();
       formData.append('name', values.name);
+      formData.append('description', values.description || '');
       formData.append('category', values.category ? (Array.isArray(values.category) ? values.category[0] : values.category) : '');
       formData.append('subCategory', values.subCategory ? (Array.isArray(values.subCategory) ? values.subCategory[0] : values.subCategory) : '');
       formData.append('fabric', values.fabric);
       formData.append('price', values.price);
-      formData.append('variants', JSON.stringify(values.variants || []));
+
+      // Process variants
+      const processedVariants = values.variants ? values.variants.map((v, index) => {
+        const variant = { size: v.size, color: v.color, stock: v.stock };
+        if (v.image && v.image.length > 0) {
+          const fileItem = v.image[0];
+          if (fileItem.originFileObj) {
+            formData.append(`variantImage_${index}`, fileItem.originFileObj);
+            variant.hasNewImage = true;
+          } else if (fileItem.url || fileItem.response) {
+            variant.image = fileItem.url || fileItem.response;
+          }
+        }
+        return variant;
+      }) : [];
+
+      formData.append('variants', JSON.stringify(processedVariants));
 
       // Separate new files from existing images
       const existingImages = [];
@@ -253,6 +277,15 @@ const AdminProducts = () => {
             </Form.Item>
 
             <Form.Item
+              name="description"
+              label="Description"
+              className="md:col-span-2"
+              rules={[{ required: true, message: 'Please enter product description' }]}
+            >
+              <Input.TextArea rows={4} placeholder="Product description..." />
+            </Form.Item>
+
+            <Form.Item
               name="category"
               label="Category"
               rules={[{ required: true, message: 'Please select or enter category' }]}
@@ -332,39 +365,82 @@ const AdminProducts = () => {
             </Upload>
           </div>
 
-          <Card title="Product Variants (Size, Stock)" size="small" className="mb-6">
-            <Form.List name="variants">
-              {(fields, { add, remove }) => (
-                <>
-                  {fields.map(({ key, name, ...restField }) => (
-                    <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'size']}
-                        rules={[{ required: true, message: 'Missing size' }]}
-                      >
-                        <Input placeholder="Size (e.g. S, M, L)" />
-                      </Form.Item>
+          <Form.Item
+            noStyle
+            shouldUpdate={(prevValues, currentValues) => prevValues.category !== currentValues.category}
+          >
+            {({ getFieldValue }) => {
+              const categoryRaw = getFieldValue('category');
+              const catStr = Array.isArray(categoryRaw) ? categoryRaw[0] : categoryRaw;
+              const showColor = catStr === 'Menswear' || catStr === 'Womenswear';
 
-                      <Form.Item
-                        {...restField}
-                        name={[name, 'stock']}
-                        rules={[{ required: true, message: 'Missing stock' }]}
-                      >
-                        <InputNumber min={0} placeholder="Stock quantity" />
-                      </Form.Item>
-                      <MinusCircle onClick={() => remove(name)} className="text-red-500 hover:text-red-700 cursor-pointer" size={20} />
-                    </Space>
-                  ))}
-                  <Form.Item>
-                    <Button type="dashed" onClick={() => add()} block icon={<Plus size={16} />}>
-                      Add Variant
-                    </Button>
-                  </Form.Item>
-                </>
-              )}
-            </Form.List>
-          </Card>
+              return (
+                <Card title={`Product Variants (Size${showColor ? ', Color' : ''}, Stock)`} size="small" className="mb-6">
+                  <Form.List name="variants">
+                    {(fields, { add, remove }) => (
+                      <>
+                        {fields.map(({ key, name, ...restField }) => (
+                          <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline" wrap>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'size']}
+                              rules={[{ required: true, message: 'Missing size' }]}
+                              style={{ margin: 0 }}
+                            >
+                              <Input placeholder="Size (e.g. S, M, L)" />
+                            </Form.Item>
+
+                            {showColor && (
+                              <>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, 'color']}
+                                  rules={[{ required: true, message: 'Missing color' }]}
+                                  style={{ margin: 0 }}
+                                >
+                                  <Input placeholder="Color (e.g. Red)" />
+                                </Form.Item>
+
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, 'image']}
+                                  valuePropName="fileList"
+                                  getValueFromEvent={(e) => {
+                                    if (Array.isArray(e)) return e;
+                                    return e && e.fileList;
+                                  }}
+                                  style={{ margin: 0 }}
+                                >
+                                  <Upload beforeUpload={() => false} maxCount={1} listType="picture">
+                                    <Button icon={<UploadIcon size={14} />} size="small">Img</Button>
+                                  </Upload>
+                                </Form.Item>
+                              </>
+                            )}
+
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'stock']}
+                              rules={[{ required: true, message: 'Missing stock' }]}
+                              style={{ margin: 0 }}
+                            >
+                              <InputNumber min={0} placeholder="Stock" />
+                            </Form.Item>
+                            <MinusCircle onClick={() => remove(name)} className="text-red-500 hover:text-red-700 cursor-pointer" size={20} />
+                          </Space>
+                        ))}
+                        <Form.Item>
+                          <Button type="dashed" onClick={() => add()} block icon={<Plus size={16} />}>
+                            Add Variant
+                          </Button>
+                        </Form.Item>
+                      </>
+                    )}
+                  </Form.List>
+                </Card>
+              );
+            }}
+          </Form.Item>
 
           <Form.Item className="flex justify-end mb-0">
             <Space>

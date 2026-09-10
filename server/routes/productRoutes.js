@@ -15,11 +15,11 @@ const upload = multer({ storage });
 
 router.route('/')
   .get(getProducts)
-  .post(protect, authorize('admin', 'developer'), upload.array('images', 5), createProduct);
+  .post(protect, authorize('admin', 'developer'), upload.any(), createProduct);
 
 router.route('/:id')
   .get(getProductById)
-  .put(protect, authorize('admin', 'developer'), upload.array('images', 5), updateProduct)
+  .put(protect, authorize('admin', 'developer'), upload.any(), updateProduct)
   .delete(protect, authorize('admin', 'developer'), deleteProduct);
 
 module.exports = router;

@@ -52,7 +52,7 @@ const AdminLayout = () => {
     {
       key: '/admin/orders',
       icon: <ShoppingBag size={18} />,
-      label: <div className="flex justify-between items-center w-full"><span>Order Management</span><span className="bg-[#333] text-white text-[10px] px-2 py-0.5 rounded">324</span></div>,
+      label: 'Order Management',
       roles: ['developer', 'owner', 'sales_staff']
     },
     {

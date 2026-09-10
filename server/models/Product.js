@@ -5,7 +5,13 @@ const variantSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-
+  color: {
+    type: String,
+    trim: true,
+  },
+  image: {
+    type: String, // URL to the specific variant image
+  },
   stock: {
     type: Number,
     required: true,
@@ -18,6 +24,10 @@ const productSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    trim: true,
+  },
+  description: {
+    type: String,
     trim: true,
   },
   category: {

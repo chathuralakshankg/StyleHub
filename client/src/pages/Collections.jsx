@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Layout, Checkbox, Slider, Select, Spin, Empty, Typography } from 'antd';
 import { Filter, Check } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -17,6 +17,7 @@ const SUB_CATEGORIES = {
 const Collections = () => {
   const { categoryId } = useParams(); // e.g. 'menswear', 'womenswear'
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +65,13 @@ const Collections = () => {
   };
 
   // Filter Logic
+  const searchQuery = searchParams.get('search')?.toLowerCase() || '';
+
   const filteredProducts = products.filter(product => {
+    // 0. Search Query
+    if (searchQuery && !product.name.toLowerCase().includes(searchQuery)) {
+      return false;
+    }
     // 1. Main Category
     if (selectedMainCategory !== 'All' && product.category !== selectedMainCategory) {
       return false;
@@ -106,10 +113,12 @@ const Collections = () => {
           <div>
             <div className="text-sm text-gray-500 mb-2">
               <Link to="/" className="hover:text-black">Home</Link> / 
-              <span className="text-black ml-1 font-medium">{selectedMainCategory === 'All' ? 'All Products' : selectedMainCategory}</span>
+              <span className="text-black ml-1 font-medium">
+                {searchQuery ? 'Search Results' : (selectedMainCategory === 'All' ? 'All Products' : selectedMainCategory)}
+              </span>
             </div>
             <Title level={2} className="!mb-0 !font-serif">
-              {selectedMainCategory === 'All' ? 'Our Collection' : `${selectedMainCategory} Collection`}
+              {searchQuery ? `Search results for "${searchParams.get('search')}"` : (selectedMainCategory === 'All' ? 'Our Collection' : `${selectedMainCategory} Collection`)}
             </Title>
             <p className="text-gray-500 mt-2">{sortedProducts.length} Products Found</p>
           </div>
@@ -143,7 +152,7 @@ const Collections = () => {
                   setSelectedSubCategories([]);
                   setPriceRange([0, 50000]);
                   setSortBy('newest');
-                  setSearchParams({});
+                  navigate('/collections');
                 }}
                 className="text-xs text-gray-400 hover:text-black uppercase tracking-widest underline underline-offset-4"
               >
@@ -155,7 +164,7 @@ const Collections = () => {
             <div className="mb-8 border-b border-gray-100 pb-8">
               <h3 className="font-semibold text-xs tracking-widest uppercase mb-6">Category</h3>
               <div className="flex flex-col gap-4">
-                {['All', 'Menswear', 'Womenswear', 'Accessories', 'Artisan Handloom'].map(cat => {
+                {['All', 'Menswear', 'Womenswear', 'Accessories'].map(cat => {
                   // Calculate count
                   const count = cat === 'All' 
                     ? products.length 
@@ -178,9 +187,12 @@ const Collections = () => {
                           name="mainCat" 
                           checked={selectedMainCategory === cat}
                           onChange={() => {
-                            setSelectedMainCategory(cat);
+                            if (cat === 'All') {
+                              navigate('/collections');
+                            } else {
+                              navigate(`/collections/${cat.toLowerCase()}`);
+                            }
                             setSelectedSubCategories([]);
-                            if (cat === 'All') setSearchParams({});
                           }} 
                         />
                       </label>

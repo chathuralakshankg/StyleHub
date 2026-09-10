@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Form, Input, Button, message, Spin } from 'antd';
 import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, Check } from 'lucide-react';
+import { ArrowLeft, MapPin, Check, Package, Calendar, CreditCard, ChevronRight, Hash } from 'lucide-react';
 import AnnouncementBar from '../components/AnnouncementBar';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -13,6 +13,8 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [displayLocation, setDisplayLocation] = useState('Add your location');
+  const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -47,8 +49,28 @@ const Profile = () => {
       }
     };
 
+    const fetchOrders = async () => {
+      try {
+        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+        const response = await fetch('http://localhost:5000/api/orders/myorders', {
+          headers: {
+            'Authorization': `Bearer ${userInfo.token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setOrders(data);
+        }
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
     if (user) {
       fetchProfile();
+      fetchOrders();
     }
   }, [user, form]);
 
@@ -295,6 +317,112 @@ const Profile = () => {
             </Button>
           </div>
         </Form>
+
+        {/* My Orders Section */}
+        <div className="mt-20">
+          <div className="mb-8 border-b border-gray-200 pb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-2xl font-serif text-gray-900 mb-1">Order History</h3>
+              <p className="text-sm text-gray-500">Track and view your recent purchases.</p>
+            </div>
+            <Package size={24} className="text-gray-300" strokeWidth={1.5} />
+          </div>
+
+          {loadingOrders ? (
+            <div className="py-12 flex justify-center"><Spin /></div>
+          ) : orders.length === 0 ? (
+            <div className="bg-white p-12 text-center border border-gray-100 rounded shadow-sm">
+              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package size={24} className="text-gray-400" />
+              </div>
+              <h4 className="text-lg font-serif text-gray-900 mb-2">No Orders Yet</h4>
+              <p className="text-gray-500 mb-6 text-sm">Looks like you haven't made your first purchase.</p>
+              <Link to="/collections" className="inline-block bg-black text-white px-8 py-3 rounded-sm text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors">
+                Explore Collections
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {orders.map(order => (
+                <div key={order._id} className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 group">
+                  {/* Order Header */}
+                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <Hash size={14} className="text-gray-400" />
+                        <p className="text-sm font-bold text-gray-900">{order._id.slice(-8).toUpperCase()}</p>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Calendar size={12} />
+                        <p>{new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-col items-end">
+                        <p className="text-xs text-gray-500 mb-0.5">Total Amount</p>
+                        <p className="text-sm font-bold text-gray-900">LKR {order.totalPrice.toLocaleString()}</p>
+                      </div>
+                      <div className="h-8 w-px bg-gray-200 mx-2 hidden sm:block"></div>
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500 font-medium">Order:</span>
+                          <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${order.orderStatus === 'Delivered' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>
+                            {order.orderStatus}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500 font-medium">Payment:</span>
+                          <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${order.paymentStatus === 'Paid' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-orange-50 text-orange-700 border border-orange-100'}`}>
+                            {order.paymentStatus}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Order Items */}
+                  <div className="p-6">
+                    <div className="space-y-4">
+                      {order.orderItems.map((item, idx) => (
+                        <div key={idx} className="flex gap-4 items-center p-3 rounded-md hover:bg-gray-50 transition-colors">
+                          <div className="w-16 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0 border border-gray-200">
+                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="flex-1 flex flex-col justify-center">
+                            <p className="text-sm font-medium text-gray-900 mb-1">{item.name}</p>
+                            <div className="flex items-center gap-3 text-xs text-gray-500">
+                              <span>Size: {item.variant.size}</span>
+                              {item.variant.color && (
+                                <>
+                                  <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                  <span>Color: {item.variant.color}</span>
+                                </>
+                              )}
+                              <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                              <span>Qty: {item.quantity}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-gray-900">LKR {(item.price * item.quantity).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Order Footer */}
+                  <div className="bg-white px-6 py-3 border-t border-gray-50 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-xs text-gray-500 flex items-center gap-1"><CreditCard size={12}/> {order.paymentMethod}</span>
+                    <button className="text-xs font-medium text-black flex items-center gap-1 hover:underline underline-offset-4">
+                      View Details <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
     <Footer />

@@ -1,58 +1,101 @@
-import React from 'react';
-import { Row, Col, Button, Table } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Row, Col, Button, Table, Spin, message } from 'antd';
 import { Upload, Plus, Filter, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
-  // Placeholder data
-  const recentOrders = [
-    { key: '1', id: '#ORD-001', customer: 'Dinithi Fernando', address: 'Horton Gardens, Colombo 07', status: 'Completed', amount: '120,000.00' },
-    { key: '2', id: '#ORD-002', customer: 'Jane Smith', address: 'Lighthouse Street, Galle Fort', status: 'Processing', amount: '450,000.00' },
-    { key: '3', id: '#ORD-003', customer: 'Alex Johnson', address: 'Hotel Road, Mount Lavinia', status: 'Pending', amount: '85,000.00' },
-    { key: '4', id: '#ORD-004', customer: 'Sarah Williams', address: 'Kollupitiya, Colombo 03', status: 'Completed', amount: '320,000.00' },
-    { key: '5', id: '#ORD-005', customer: 'Kasun Perera', address: 'Hillwood Drive, Kandy', status: 'Processing', amount: '195,000.00' },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    totalOrders: 0,
+    totalProducts: 0,
+    totalUsers: 0,
+    recentOrders: []
+  });
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      const headers = { 'Authorization': `Bearer ${userInfo.token}` };
+
+      const [ordersRes, productsRes, usersRes] = await Promise.all([
+        fetch('http://localhost:5000/api/orders', { headers }),
+        fetch('http://localhost:5000/api/products'),
+        fetch('http://localhost:5000/api/users/customers', { headers })
+      ]);
+
+      const orders = await ordersRes.json();
+      const products = await productsRes.json();
+      const users = await usersRes.json();
+
+      const successfulOrders = Array.isArray(orders) ? orders.filter(o => o.orderStatus !== 'Cancelled' && o.paymentStatus !== 'Failed' && o.paymentStatus !== 'Returned') : [];
+      const totalRevenue = successfulOrders.reduce((acc, order) => acc + order.totalPrice, 0);
+
+      setStats({
+        totalRevenue,
+        totalOrders: Array.isArray(orders) ? orders.length : 0,
+        totalProducts: Array.isArray(products) ? products.length : 0,
+        totalUsers: Array.isArray(users) ? users.length : 0,
+        recentOrders: Array.isArray(orders) ? orders.slice(0, 5) : []
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      message.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderStatus = (status) => {
-    if (status === 'Completed') return <span className="badge-green"><span className="w-1.5 h-1.5 rounded-full bg-[#048b56] inline-block mr-1.5"></span>Completed</span>;
+    if (status === 'Delivered' || status === 'Shipped') return <span className="badge-green"><span className="w-1.5 h-1.5 rounded-full bg-[#048b56] inline-block mr-1.5"></span>{status}</span>;
     if (status === 'Processing') return <span className="badge-yellow"><span className="w-1.5 h-1.5 rounded-full bg-[#b7790b] inline-block mr-1.5"></span>Processing</span>;
     if (status === 'Pending') return <span className="badge-gray"><span className="w-1.5 h-1.5 rounded-full bg-[#8c8c8c] inline-block mr-1.5"></span>Pending</span>;
+    if (status === 'Cancelled') return <span className="badge-red" style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '2px 8px', borderRadius: '4px' }}><span className="w-1.5 h-1.5 rounded-full bg-[#b91c1c] inline-block mr-1.5"></span>Cancelled</span>;
+    return <span>{status}</span>;
   };
 
   const columns = [
     { 
       title: 'Order ID', 
-      dataIndex: 'id', 
-      key: 'id',
-      render: text => <span className="font-bold text-xs">{text}</span>
+      dataIndex: '_id', 
+      key: '_id',
+      render: text => <span className="font-bold text-xs">#{text.slice(-8).toUpperCase()}</span>
     },
     { 
       title: 'Customer', 
       key: 'customer',
       render: (_, record) => (
         <div>
-          <div className="text-sm font-medium text-gray-900">{record.customer}</div>
-          <div className="text-xs text-gray-400 mt-0.5">{record.address}</div>
+          <div className="text-sm font-medium text-gray-900">{record.shippingDetails.firstName} {record.shippingDetails.lastName}</div>
+          <div className="text-xs text-gray-400 mt-0.5">{record.shippingDetails.city}</div>
         </div>
       )
     },
     { 
-      title: 'Status', 
-      dataIndex: 'status', 
-      key: 'status',
+      title: 'Order Status', 
+      dataIndex: 'orderStatus', 
+      key: 'orderStatus',
       render: status => renderStatus(status)
     },
     { 
       title: 'Amount (LKR)', 
-      dataIndex: 'amount', 
-      key: 'amount',
-      render: amount => <span className="text-xs font-mono font-medium">Rs. {amount}</span>
+      dataIndex: 'totalPrice', 
+      key: 'totalPrice',
+      render: amount => <span className="text-xs font-mono font-medium">Rs. {amount.toLocaleString()}</span>
     },
     {
-      title: 'Action',
-      key: 'action',
-      render: () => <button className="text-xs text-gray-400 hover:text-black transition-colors">Inspect</button>
+      title: 'Date',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: date => <span className="text-xs text-gray-500">{new Date(date).toLocaleDateString()}</span>
     }
   ];
+
+  if (loading) return <div className="py-20 flex justify-center"><Spin size="large" /></div>;
 
   return (
     <div className="max-w-[1400px] mx-auto">
@@ -71,12 +114,12 @@ const Dashboard = () => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <span className="text-xs font-medium text-gray-500 tracking-wider">TOTAL REVENUE</span>
-                <span className="bg-[#e6f7ee] text-[#048b56] text-[10px] font-bold px-2 py-0.5 rounded">+14.2%</span>
+                <span className="bg-[#e6f7ee] text-[#048b56] text-[10px] font-bold px-2 py-0.5 rounded">All Time</span>
               </div>
               <div className="text-xl font-serif text-gray-900 leading-tight">Rs.</div>
-              <div className="text-4xl font-serif text-gray-900 tracking-tight">12,450,000</div>
+              <div className="text-4xl font-serif text-gray-900 tracking-tight">{stats.totalRevenue.toLocaleString()}</div>
             </div>
-            <div className="text-xs text-gray-400 mt-4">Prev. Month: Rs. 10.9M LKR</div>
+            <div className="text-xs text-gray-400 mt-4">Verified successful transactions</div>
           </div>
         </Col>
         
@@ -85,13 +128,13 @@ const Dashboard = () => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <span className="text-xs font-medium text-gray-500 tracking-wider">TOTAL ORDERS</span>
-                <span className="bg-gray-100 text-gray-600 text-[10px] font-medium px-2 py-0.5 rounded">This Month</span>
+                <span className="bg-gray-100 text-gray-600 text-[10px] font-medium px-2 py-0.5 rounded">All Time</span>
               </div>
-              <div className="text-4xl font-serif text-gray-900 tracking-tight mb-2">324</div>
+              <div className="text-4xl font-serif text-gray-900 tracking-tight mb-2">{stats.totalOrders}</div>
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-500 mt-4">
               <span className="w-1.5 h-1.5 bg-[#b7790b] rounded-full"></span>
-              18 orders pending fulfillment
+              Across all platforms
             </div>
           </div>
         </Col>
@@ -101,13 +144,12 @@ const Dashboard = () => {
             <div>
               <div className="flex justify-between items-start mb-6">
                 <span className="text-xs font-medium text-gray-500 tracking-wider w-1/2">TOTAL PRODUCTS</span>
-                <span className="bg-[#fcf5e8] text-[#b7790b] text-[10px] font-medium px-2 py-0.5 rounded text-right">Silk &<br/>Handloom</span>
+                <span className="bg-[#fcf5e8] text-[#b7790b] text-[10px] font-medium px-2 py-0.5 rounded text-right">In Store</span>
               </div>
-              <div className="text-4xl font-serif text-gray-900 tracking-tight">86</div>
+              <div className="text-4xl font-serif text-gray-900 tracking-tight">{stats.totalProducts}</div>
             </div>
             <div className="flex gap-4 text-xs text-gray-500 mt-4">
-              <span className="text-gray-400">Active<br/>items:</span>
-              <span className="text-gray-500">82 in stock, 4<br/>backorder</span>
+              <span className="text-gray-400">Manage in Inventory section</span>
             </div>
           </div>
         </Col>
@@ -117,11 +159,11 @@ const Dashboard = () => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <span className="text-xs font-medium text-gray-500 tracking-wider">TOTAL USERS</span>
-                <span className="bg-[#e6f7ee] text-[#048b56] text-[10px] font-bold px-2 py-0.5 rounded">+88 Patrons</span>
+                <span className="bg-[#e6f7ee] text-[#048b56] text-[10px] font-bold px-2 py-0.5 rounded">Registered</span>
               </div>
-              <div className="text-4xl font-serif text-gray-900 tracking-tight mb-2">1,204</div>
+              <div className="text-4xl font-serif text-gray-900 tracking-tight mb-2">{stats.totalUsers}</div>
             </div>
-            <div className="text-xs text-gray-500 mt-4">Tier: 142 Haute Couture VIPs</div>
+            <div className="text-xs text-gray-500 mt-4">Verified customer accounts</div>
           </div>
         </Col>
       </Row>
@@ -131,31 +173,24 @@ const Dashboard = () => {
         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
           <div>
             <h2 className="text-xl font-serif text-gray-900 mb-1">Recent Orders</h2>
-            <p className="text-xs text-gray-400">Live transaction ledger across Akuressa main branch and islandwide deliveries</p>
+            <p className="text-xs text-gray-400">Live transaction ledger across StyleHub platforms</p>
           </div>
           <div className="flex items-center gap-4">
-            <Button icon={<Filter size={14} />} className="text-xs flex items-center h-8 rounded border-gray-200">
-              Filter Status
-            </Button>
-            <button className="text-xs font-bold text-gray-900 flex items-center gap-1 hover:text-gray-500 transition-colors">
+            <Link to="/admin/orders" className="text-xs font-bold text-gray-900 flex items-center gap-1 hover:text-gray-500 transition-colors">
               View All Orders <ArrowRight size={14} />
-            </button>
+            </Link>
           </div>
         </div>
         
         <Table 
           columns={columns} 
-          dataSource={recentOrders} 
+          dataSource={stats.recentOrders} 
+          rowKey="_id"
           pagination={false}
         />
 
         <div className="p-4 border-t border-gray-100 flex justify-between items-center bg-[#faf9f7]">
-          <span className="text-xs text-gray-500">Showing 5 of 324 total orders registered this fiscal cycle</span>
-          <div className="flex items-center gap-2">
-            <Button size="small" className="text-xs h-7 rounded border-gray-200" disabled>Previous</Button>
-            <span className="text-xs font-medium mx-2">Page 1 of 65</span>
-            <Button size="small" className="text-xs h-7 rounded border-gray-200">Next</Button>
-          </div>
+          <span className="text-xs text-gray-500">Showing {stats.recentOrders.length} of {stats.totalOrders} total orders</span>
         </div>
       </div>
     </div>

@@ -1,16 +1,22 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Layout, Badge } from 'antd';
-import { Search, User, ShoppingBag, LogOut, LayoutDashboard, ChevronDown } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Search, User, ShoppingBag, LogOut, LayoutDashboard, ChevronDown, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthModal from './Auth';
 import { AuthContext } from '../context/AuthContext';
+import { CartContext } from '../context/CartContext';
 
 const { Header } = Layout;
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
   const { user, logout } = useContext(AuthContext);
+  const { cartItems } = useContext(CartContext);
+  const cartItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,6 +25,15 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/collections?search=${encodeURIComponent(searchQuery.trim())}`);
+      setIsSearchOpen(false);
+      setSearchQuery('');
+    }
+  };
 
   return (
     <>
@@ -70,8 +85,30 @@ const Navbar = () => {
         </div>
 
         {/* Icons */}
-        <div className="flex items-center gap-6">
-          <button className="text-gray-900 hover:text-gray-500 transition-colors"><Search size={18} strokeWidth={1.5} /></button>
+        <div className="flex items-center gap-4 sm:gap-6">
+          <div className="relative flex items-center">
+            {isSearchOpen && (
+              <form onSubmit={handleSearchSubmit} className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center bg-gray-100 rounded-full px-3 py-1.5 w-48 sm:w-64 transition-all animate-in slide-in-from-right-4 fade-in duration-200">
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search products..." 
+                  className="bg-transparent border-none outline-none text-sm w-full placeholder:text-gray-400"
+                  autoFocus
+                />
+                <button type="button" onClick={() => setIsSearchOpen(false)} className="text-gray-400 hover:text-black">
+                  <X size={14} />
+                </button>
+              </form>
+            )}
+            <button 
+              onClick={() => setIsSearchOpen(!isSearchOpen)} 
+              className="text-gray-900 hover:text-gray-500 transition-colors z-10 bg-white sm:bg-transparent rounded-full p-1"
+            >
+              <Search size={18} strokeWidth={1.5} />
+            </button>
+          </div>
           
           {user ? (
             <div className="flex items-center gap-5">
@@ -101,10 +138,14 @@ const Navbar = () => {
             </button>
           )}
 
-          <button className="text-gray-900 hover:text-gray-500 transition-colors relative">
+          <Link to="/cart" className="text-gray-900 hover:text-gray-500 transition-colors relative">
             <ShoppingBag size={18} strokeWidth={1.5} />
-            <div className="absolute -top-1 -right-1.5 w-3 h-3 bg-black rounded-full border-2 border-white"></div>
-          </button>
+            {cartItemCount > 0 && (
+              <div className="absolute -top-1.5 -right-2 w-4 h-4 bg-black rounded-full text-white text-[10px] flex items-center justify-center border-2 border-white">
+                {cartItemCount > 9 ? '9+' : cartItemCount}
+              </div>
+            )}
+          </Link>
         </div>
       </Header>
     </>

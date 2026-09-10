@@ -33,16 +33,29 @@ const getProductById = async (req, res) => {
 // @access  Private/Admin
 const createProduct = async (req, res) => {
   try {
-    const { name, category, subCategory, fabric, price, variants } = req.body;
+    const { name, description, category, subCategory, fabric, price, variants } = req.body;
     let parsedVariants = [];
     if (variants) {
       parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
     }
 
-    const images = req.files ? req.files.map(file => file.path) : [];
+    const images = req.files ? req.files.filter(f => f.fieldname === 'images').map(file => file.path) : [];
+
+    // Map variant images
+    parsedVariants = parsedVariants.map((v, index) => {
+      if (v.hasNewImage && req.files) {
+        const file = req.files.find(f => f.fieldname === `variantImage_${index}`);
+        if (file) {
+          v.image = file.path;
+        }
+      }
+      delete v.hasNewImage;
+      return v;
+    });
 
     const product = new Product({
       name,
+      description,
       category,
       subCategory,
       fabric,
@@ -63,7 +76,7 @@ const createProduct = async (req, res) => {
 // @access  Private/Admin
 const updateProduct = async (req, res) => {
   try {
-    const { name, category, subCategory, fabric, price, variants, existingImages } = req.body;
+    const { name, description, category, subCategory, fabric, price, variants, existingImages } = req.body;
     let parsedVariants = [];
     if (variants) {
       parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
@@ -73,6 +86,7 @@ const updateProduct = async (req, res) => {
 
     if (product) {
       product.name = name || product.name;
+      product.description = description !== undefined ? description : product.description;
       product.category = category || product.category;
       product.subCategory = subCategory !== undefined ? subCategory : product.subCategory;
       product.fabric = fabric || product.fabric;
@@ -84,10 +98,23 @@ const updateProduct = async (req, res) => {
           parsedExistingImages = typeof existingImages === 'string' ? JSON.parse(existingImages) : existingImages;
       }
 
-      let newImages = req.files ? req.files.map(file => file.path) : [];
+      let newImages = req.files ? req.files.filter(f => f.fieldname === 'images').map(file => file.path) : [];
       
       // Combine kept existing images with newly uploaded images
       product.images = [...parsedExistingImages, ...newImages];
+
+      // Map variant images
+      parsedVariants = parsedVariants.map((v, index) => {
+        if (v.hasNewImage && req.files) {
+          const file = req.files.find(f => f.fieldname === `variantImage_${index}`);
+          if (file) {
+            v.image = file.path;
+          }
+        }
+        delete v.hasNewImage;
+        return v;
+      });
+      if (variants) product.variants = parsedVariants;
 
       const updatedProduct = await product.save();
       res.json(updatedProduct);

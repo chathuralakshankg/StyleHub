@@ -11,9 +11,16 @@ import Dashboard from './pages/admin/Dashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminTickets from './pages/admin/AdminTickets';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminReports from './pages/admin/AdminReports';
 import Profile from './pages/Profile';
-
 import Collections from './pages/Collections';
+import ProductDetails from './pages/ProductDetails';
+import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
+import CheckoutSuccess from './pages/CheckoutSuccess';
+import Payment from './pages/Payment';
+import { CartProvider } from './context/CartContext';
 
 const THEME = {
   token: {
@@ -47,13 +54,19 @@ const THEME = {
 
 export default function App() {
   return (
-    <ConfigProvider theme={THEME}>
-      <Layout className="min-h-screen bg-white">
+    <CartProvider>
+      <ConfigProvider theme={THEME}>
+        <Layout className="min-h-screen bg-white">
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/collections" element={<Collections />} />
             <Route path="/collections/:categoryId" element={<Collections />} />
+            <Route path="/product/:id" element={<ProductDetails />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/payment" element={<Payment />} />
+            <Route path="/checkout-success" element={<CheckoutSuccess />} />
             <Route path="/verify/:token" element={<VerifyEmail />} />
             <Route path="/resetpassword/:token" element={<ResetPassword />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -64,13 +77,16 @@ export default function App() {
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="products" element={<AdminProducts />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="payments" element={<AdminReports />} />
                 <Route path="tickets" element={<AdminTickets />} />
                 <Route path="settings" element={<div className="p-8">Settings Page Coming Soon</div>} />
               </Route>
             </Route>
           </Routes>
         </Router>
-      </Layout>
-    </ConfigProvider>
+        </Layout>
+      </ConfigProvider>
+    </CartProvider>
   );
 }
