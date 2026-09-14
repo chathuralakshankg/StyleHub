@@ -248,25 +248,35 @@ const Collections = () => {
               <Empty description="No products match your filters." className="mt-20" />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {sortedProducts.map(product => (
-                  <Link to={`/product/${product._id}`} key={product._id} className="group cursor-pointer">
+                {sortedProducts.map(product => {
+                  const totalStock = product.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
+                  const isOutOfStock = totalStock === 0;
+                  return (
+                  <Link to={`/product/${product._id}`} key={product._id} className={`group ${isOutOfStock ? 'opacity-60 hover:opacity-80' : 'cursor-pointer'}`}>
                     <div className="relative aspect-[3/4] bg-gray-100 mb-4 overflow-hidden rounded-sm">
+                      {isOutOfStock && (
+                        <div className="absolute top-4 left-4 z-20 bg-red-600 text-white text-[10px] uppercase tracking-widest px-2 py-1 font-medium shadow-md">
+                          Out of Stock
+                        </div>
+                      )}
                       {product.images && product.images.length > 0 ? (
                         <img 
                           src={product.images[0]} 
                           alt={product.name} 
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          className={`w-full h-full object-cover transition-transform duration-700 ${!isOutOfStock && 'group-hover:scale-105'}`}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
                       )}
                       
                       {/* Hover Overlay Button */}
-                      <div className="absolute inset-x-0 bottom-0 p-4 opacity-0 transform translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                        <div className="w-full bg-black/90 text-white text-center py-3 text-sm font-medium backdrop-blur-sm shadow-xl">
-                          View Details
+                      {!isOutOfStock && (
+                        <div className="absolute inset-x-0 bottom-0 p-4 opacity-0 transform translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                          <div className="w-full bg-black/90 text-white text-center py-3 text-sm font-medium backdrop-blur-sm shadow-xl">
+                            View Details
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                     <div>
                       <div className="text-xs text-gray-500 mb-1">{product.category}</div>
@@ -274,7 +284,7 @@ const Collections = () => {
                       <p className="font-semibold text-gray-900 mt-1">LKR {product.price.toLocaleString()}</p>
                     </div>
                   </Link>
-                ))}
+                )})}
               </div>
             )}
           </div>

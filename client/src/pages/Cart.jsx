@@ -60,21 +60,30 @@ const Cart = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-gray-500">Qty:</span>
-                        <InputNumber 
-                          min={1} 
-                          max={item.variant.stock}
-                          value={item.quantity} 
-                          onChange={(val) => updateQuantity(item.id, val)}
-                          className="w-16"
-                        />
+                    <div className="flex items-start justify-between mt-4">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-gray-500">Qty:</span>
+                          <InputNumber 
+                            min={1} 
+                            value={item.quantity} 
+                            onChange={(val) => updateQuantity(item.id, val)}
+                            className="w-16"
+                          />
+                        </div>
+                        <span className="text-xs text-orange-600 mt-1">
+                          Max available: {item.variant.stock}
+                        </span>
+                        {item.quantity > item.variant.stock && (
+                          <span className="text-xs text-red-600 font-semibold max-w-[150px]">
+                            Quantity exceeds stock
+                          </span>
+                        )}
                       </div>
                       
                       <button 
                         onClick={() => removeFromCart(item.id)}
-                        className="text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 text-sm"
+                        className="text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 text-sm mt-1"
                       >
                         <Trash2 size={16} /> <span className="hidden sm:inline">Remove</span>
                       </button>
@@ -109,10 +118,16 @@ const Cart = () => {
                 <Button 
                   type="primary" 
                   onClick={() => navigate('/checkout')}
-                  className="bg-black w-full h-14 text-sm tracking-widest uppercase font-semibold flex items-center justify-center gap-2"
+                  disabled={cartItems.some(item => item.quantity > item.variant.stock)}
+                  className={`w-full h-14 text-sm tracking-widest uppercase font-semibold flex items-center justify-center gap-2 ${cartItems.some(item => item.quantity > item.variant.stock) ? 'bg-gray-400 text-white cursor-not-allowed border-none' : 'bg-black'}`}
                 >
                   Checkout <ArrowRight size={16} />
                 </Button>
+                {cartItems.some(item => item.quantity > item.variant.stock) && (
+                  <div className="text-red-500 text-xs text-center mt-3 font-medium">
+                    Please reduce quantities that exceed available stock.
+                  </div>
+                )}
 
                 <div className="mt-4 text-center">
                   <Link to="/collections" className="text-xs text-gray-500 underline underline-offset-4 hover:text-black transition-colors">

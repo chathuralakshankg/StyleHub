@@ -51,7 +51,6 @@ export const CartProvider = ({ children }) => {
         if (item.id === cartItemId) {
           if (newQuantity > item.variant.stock) {
             message.warning(`Only ${item.variant.stock} items available in stock.`);
-            return item;
           }
           if (newQuantity < 1) return item;
           return { ...item, quantity: newQuantity };

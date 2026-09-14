@@ -19,6 +19,14 @@ const Checkout = () => {
   useEffect(() => {
     if (cartItems.length === 0) {
       navigate('/cart');
+      return;
+    }
+    
+    // Check for stock validation upon entering checkout
+    const invalidItems = cartItems.filter(item => item.quantity > item.variant.stock);
+    if (invalidItems.length > 0) {
+      message.error('Some items in your cart exceed available stock. Please review your cart.');
+      navigate('/cart');
     }
   }, [cartItems, navigate]);
 
@@ -55,6 +63,14 @@ const Checkout = () => {
   const total = subtotal + shipping;
 
   const onFinish = async (values) => {
+    // Check for stock validation
+    const invalidItems = cartItems.filter(item => item.quantity > item.variant.stock);
+    if (invalidItems.length > 0) {
+      message.error('Some items in your cart exceed available stock. Please review your cart.');
+      navigate('/cart');
+      return;
+    }
+
     setLoading(true);
     try {
       const orderData = {

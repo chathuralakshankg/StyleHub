@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Typography, Button, Space, Modal, Form, Input, InputNumber, Upload, message, Popconfirm, Select, Card } from 'antd';
+import { Table, Typography, Button, Space, Modal, Form, Input, InputNumber, Upload, message, Popconfirm, Select, Card, Tag } from 'antd';
 import { Edit, Trash2, Plus, Upload as UploadIcon, MinusCircle } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 
@@ -217,7 +217,7 @@ const AdminProducts = () => {
       key: 'stock',
       render: (_, record) => {
         const totalStock = record.variants ? record.variants.reduce((acc, variant) => acc + variant.stock, 0) : 0;
-        return totalStock;
+        return totalStock > 0 ? totalStock : <Tag color="red">Out of Stock</Tag>;
       }
     },
     { 

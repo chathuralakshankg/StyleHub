@@ -242,22 +242,38 @@ const ProductDetails = () => {
                   );
                 })}
               </div>
-              {selectedSize && (
-                <div className="mt-3 text-xs text-green-600 flex items-center gap-1">
-                  <Check size={14} /> 
-                  {availableVariants.find(v => v.size === selectedSize)?.stock} items in stock
-                </div>
-              )}
+              {(() => {
+                const totalStock = availableVariants.reduce((sum, v) => sum + v.stock, 0);
+                if (totalStock === 0) {
+                  return (
+                    <div className="mt-3 text-xs text-red-600 flex items-center gap-1 font-medium">
+                      Out of stock
+                    </div>
+                  );
+                }
+                return selectedSize ? (
+                  <div className="mt-3 text-xs text-green-600 flex items-center gap-1">
+                    <Check size={14} /> 
+                    {availableVariants.find(v => v.size === selectedSize)?.stock} items in stock for this size
+                  </div>
+                ) : (
+                  <div className="mt-3 text-xs text-green-600 flex items-center gap-1">
+                    <Check size={14} /> 
+                    {totalStock} items in stock
+                  </div>
+                );
+              })()}
             </div>
 
             <Button 
               type="primary" 
-              className="bg-black h-14 text-base tracking-widest uppercase font-medium mt-auto" 
+              className={`h-14 text-base tracking-widest uppercase font-medium mt-auto ${availableVariants.length === 0 || product.variants?.reduce((sum, v) => sum + v.stock, 0) === 0 ? 'bg-gray-400 text-white cursor-not-allowed border-none hover:bg-gray-400 hover:text-white' : 'bg-black'}`} 
               block 
-              icon={<ShoppingBag size={18} />}
+              disabled={availableVariants.length === 0 || product.variants?.reduce((sum, v) => sum + v.stock, 0) === 0}
+              icon={(availableVariants.length > 0 && product.variants?.reduce((sum, v) => sum + v.stock, 0) > 0) && <ShoppingBag size={18} />}
               onClick={handleAddToCart}
             >
-              Add to Bag
+              {(availableVariants.length === 0 || product.variants?.reduce((sum, v) => sum + v.stock, 0) === 0) ? 'Out of Stock' : 'Add to Bag'}
             </Button>
             
             <div className="mt-8 grid grid-cols-2 gap-4 text-xs text-gray-500 border-t pt-6">
